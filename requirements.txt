@@ -1,0 +1,7 @@
+pytz
+PyYAML
+google-cloud-logging
+google-cloud-bigquery
+requests
+boto3
+botocore
