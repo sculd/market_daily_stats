@@ -70,6 +70,7 @@ def _get_daily_stat(date_str, dataset_mode):
         market = 'binance'
 
     query = _QUERY_FORMAT.format(date_str=date_str, dataset_id=dataset_id)
+    logging_util.info("query: ", query)
     q_job = _client.query(query)
     results = q_job.result()
     ret = []
