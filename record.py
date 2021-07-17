@@ -45,4 +45,4 @@ def records(items):
                     }
                 )
     except Exception as ex:
-        logging_util.info('an exception occurred while writing to dynamodb: {e}'.format(e=str(ex)))
+        logging_util.warning('an exception occurred while writing to dynamodb: {e}'.format(e=str(ex)))
