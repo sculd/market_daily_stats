@@ -10,6 +10,7 @@ item = {
     'daily_max': '11',
     'daily_min': '10',
     'daily_avg': '10',
+    'daily_close': '10',
     'daily_volume_millions': '10'
 }
 

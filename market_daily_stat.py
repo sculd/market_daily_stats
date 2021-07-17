@@ -12,15 +12,30 @@ _DATASET_ID_STOCK = 'market_data'
 _DATASET_ID_BINANCE = 'market_data_binance'
 
 _QUERY_FORMAT = """
-    SELECT 
-        symbol, cur_date, 
-        ROUND(daily_max, 2) AS daily_max, 
-        ROUND(daily_min, 2) AS daily_min, 
-        ROUND(daily_avg, 2) AS daily_avg, 
-        ROUND(daily_volume / 1000000, 3) AS daily_volume_millions	
-    FROM `trading-290017.{dataset_id}.daily_aggregation`
-    WHERE TRUE
-    AND cur_date = "{date_str}"
+    WITH BASE AS (
+        SELECT *, DATE(timestamp, "America/New_York") AS cur_date
+        FROM `trading-290017.{dataset_id}.by_minute`
+        WHERE TRUE
+        AND (EXTRACT(HOUR FROM timestamp AT TIME ZONE "America/New_York") < 16)
+        AND ((EXTRACT(HOUR FROM timestamp AT TIME ZONE "America/New_York") > 9) OR (EXTRACT(HOUR FROM timestamp AT TIME ZONE "America/New_York") = 9 AND EXTRACT(MINUTE FROM timestamp) >= 30))
+        AND DATE(timestamp, "America/New_York")  = "{date_str}"
+    )
+    
+    SELECT a.symbol, a.cur_date, a.daily_max, a.daily_min, ROUND(a.daily_avg, 2) as daily_avg, b.daily_close, ROUND(a.daily_volume / 1000000, 3) AS daily_volume_millions
+    FROM (
+        SELECT symbol, cur_date, MAX(close) AS daily_max, MIN(close) AS daily_min, AVG(close) AS daily_avg, SUM(volume) AS daily_volume
+        FROM BASE
+        WHERE TRUE
+        group by symbol, cur_date
+    ) a JOIN (
+        SELECT a.symbol, a.cur_date, ROUND(AVG(close), 2) as daily_close
+        FROM BASE a JOIN (
+          SELECT symbol, cur_date, MAX(timestamp) AS last_timestamp
+          FROM BASE
+          GROUP BY symbol, cur_date
+        ) b ON a.symbol = b.symbol AND a.cur_date = b.cur_date AND timestamp = b.last_timestamp
+        GROUP BY a.symbol, a.cur_date # to prevent possible duplicates rows for the last timestamp.
+    ) b ON a.symbol = b.symbol AND a.cur_date = b.cur_date 
     """
 
 _RESOURCE_DYNAMODB = 'dynamodb'
@@ -66,6 +81,7 @@ def _get_daily_stat(date_str, dataset_mode):
             'daily_max': row.daily_max,
             'daily_min': row.daily_min,
             'daily_avg': row.daily_avg,
+            'daily_close': row.daily_close,
             'daily_volume_millions': row.daily_volume_millions
         }
         ret.append(item)

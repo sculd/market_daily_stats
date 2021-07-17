@@ -40,6 +40,7 @@ def records(items):
                         'daily_max': str(item['daily_max']),
                         'daily_min': str(item['daily_min']),
                         'daily_avg': str(item['daily_avg']),
+                        'daily_close': str(item['daily_close']),
                         'daily_volume_millions': str(item['daily_volume_millions'])
                     }
                 )
